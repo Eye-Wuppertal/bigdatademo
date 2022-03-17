@@ -4,7 +4,9 @@ package com.tal;
     @Author tal
 */
 
+import org.apache.http.HttpHost;
 import org.apache.http.NameValuePair;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -108,6 +110,38 @@ public class HttpClientTest {
         // 7、关闭资源
         // httpClient.close(); 不用关闭httpClient对象，因为使用连接池，HttpClient对象使用完后要回到连接池中，而不是关掉
         response.close();
+
+    }
+
+    @Test
+    public void testConfigure() throws Exception {
+        // 0、创建请求配置对象
+        RequestConfig requestConfig = RequestConfig.custom()
+                .setSocketTimeout(10000)                //  设置连接超时时间
+                .setConnectTimeout(10000)               //  设置创建连接超时时间
+                .setConnectionRequestTimeout(10000)     //  设置请求超时时间
+                .setProxy(new HttpHost("119.123.175.200",9797))    //  添加代理服务器
+                .build();
+
+        // 1、创建HttpClient对象
+        //CloseableHttpClient httpClient = HttpClients.createDefault();
+        CloseableHttpClient httpClient = HttpClients.custom().setDefaultRequestConfig(requestConfig).build();
+
+        // 2、创建HttpGet对象
+        HttpGet httpGet = new HttpGet("https://www.itcast.cn/");
+
+        // 3、发起请求
+        CloseableHttpResponse response = httpClient.execute(httpGet);
+
+        // 4、获取相应数据
+        if(response.getStatusLine().getStatusCode() == 200){  // 200表示响应成功
+            String html = EntityUtils.toString(response.getEntity(), "UTF-8");
+            System.out.println(html);
+        }
+
+        // 5、关闭资源
+        response.close();
+        httpClient.close();
 
     }
 
