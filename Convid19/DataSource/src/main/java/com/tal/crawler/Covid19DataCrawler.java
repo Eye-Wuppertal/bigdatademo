@@ -32,8 +32,8 @@ public class Covid19DataCrawler {
     private KafkaTemplate kafkaTemplate;
 
     // 后续将该方法改为定时任务,定时爬取数据
-    //@Scheduled(cron = "0 0 8 * * ?") // 每天八点执行
-    @Scheduled(cron = "0/5 * * * * ?") // 每5s执行一次，用于测试
+    @Scheduled(cron = "0 0 8 * * ?") // 每天八点执行
+    //@Scheduled(cron = "0/5 * * * * ?") // 每5s执行一次，用于测试
     public void testCrawling() throws Exception {
         String datetime = TimeUtils.format(System.currentTimeMillis(), "yyyy-MM-dd");
         // 1、爬取指定页面
