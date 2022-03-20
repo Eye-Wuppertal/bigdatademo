@@ -12,15 +12,29 @@ import com.tal.utils.TimeUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+//@RunWith(SpringJUnit4ClassRunner.class)
+//@SpringBootTest
+@Component
 public class Covid19DataCrawler {
+    @Autowired
+    private KafkaTemplate kafkaTemplate;
+
     // 后续将该方法改为定时任务,定时爬取数据
-    @Test
-    public void testCrawling(){
+    //@Scheduled(cron = "0 0 8 * * ?") // 每天八点执行
+    @Scheduled(cron = "0/5 * * * * ?") // 每5s执行一次，用于测试
+    public void testCrawling() throws Exception {
         String datetime = TimeUtils.format(System.currentTimeMillis(), "yyyy-MM-dd");
         // 1、爬取指定页面
         String html = HttpUtils.getHtml("https://ncov.dxy.cn/ncovh5/view/pneumonia");
@@ -60,6 +74,11 @@ public class Covid19DataCrawler {
                 bean.setPid(pBean.getLocationId());
                 bean.setProvinceShortName(pBean.getProvinceShortName());
                 //System.out.println(bean);
+                // 后续需要将城市疫情数据发送给kafka
+                // 将JavaBean转化为jsonStr再发送给kafka
+                String beanStr = JSON.toJSONString(bean);
+                kafkaTemplate.send("covid19",bean.getPid(),beanStr);
+
             }
             // 6、获取第一层json（省份数据）中的每一天的统计数据
             String statisticsDataUrl = pBean.getStatisticsData();
@@ -67,11 +86,15 @@ public class Covid19DataCrawler {
             // 获取statisticsDataStr中data对应的数据
             JSONObject jsonObject = JSON.parseObject(statisticsDataStr);
             String dataStr = jsonObject.getString("data");
-            System.out.println(dataStr);
-            
+            //System.out.println(dataStr);
+            // 将爬取解析出来的数据设置回pBean中的statisticsData,替换原先的url
+            pBean.setStatisticsData(dataStr);
+            pBean.setCities(null);
+            //System.out.println(pBean);
+            // 后续需要将省份疫情数据发送给kafka
+            String pBeanStr = JSON.toJSONString(pBean);
+            kafkaTemplate.send("covid19",pBean.getLocationId(),pBeanStr);
         }
-
     }
-
 
 }
